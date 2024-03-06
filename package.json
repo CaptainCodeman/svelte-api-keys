@@ -1,0 +1,89 @@
+{
+	"name": "svelte-api-keys",
+	"description": "API Key Generation, Validation, and Rate Limiting for SvelteKit",
+	"version": "0.0.2",
+	"keywords": [
+		"svelte",
+		"sveltekit",
+		"api",
+		"rest",
+		"keys",
+		"hash",
+		"security",
+		"permissions",
+		"generation",
+		"validation",
+		"rate-limit",
+		"token-bucket",
+		"redis",
+		"firestore",
+		"throttle",
+		"protect"
+	],
+	"files": [
+		"dist"
+	],
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"svelte": "./dist/index.js"
+		}
+	},
+	"svelte": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"homepage": "https://captaincodeman.github.io/svelte-api-keys/",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/captaincodeman/svelte-api-keys.git"
+	},
+	"author": {
+		"name": "Simon Green",
+		"email": "simon@captaincodeman.com",
+		"url": "https://www.captaincodeman.com/"
+	},
+	"license": "MIT",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"package": "tsup && publint",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test": "vitest",
+		"test:ui": "vitest --ui",
+		"lint": "prettier --check .",
+		"format": "prettier --write ."
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-auto": "^3.1.1",
+		"@sveltejs/kit": "^2.5.4",
+		"@sveltejs/vite-plugin-svelte": "^3.0.2",
+		"@tailwindcss/forms": "^0.5.7",
+		"@tailwindcss/typography": "^0.5.10",
+		"@types/node": "^20.11.30",
+		"@vitest/ui": "^1.4.0",
+		"autoprefixer": "^10.4.19",
+		"postcss": "^8.4.38",
+		"postcss-load-config": "^5.0.3",
+		"prettier": "^3.2.5",
+		"prettier-plugin-svelte": "^3.2.2",
+		"prettier-plugin-tailwindcss": "^0.5.12",
+		"publint": "^0.2.7",
+		"svelte": "^4.2.12",
+		"svelte-check": "^3.6.8",
+		"tailwindcss": "^3.4.1",
+		"tslib": "^2.6.2",
+		"tsup": "^8.0.2",
+		"typescript": "^5.4.3",
+		"vite": "^5.2.2",
+		"vitest": "^1.4.0"
+	},
+	"dependencies": {
+		"bad-words-next": "^2.2.1",
+		"base-x": "^4.0.0",
+		"redis": "^4.6.13",
+		"svelte-web-storage": "^0.0.7"
+	}
+}
