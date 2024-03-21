@@ -11,17 +11,23 @@ import {
 	InMemoryKeyStore,
 	FirestoreKeyStore,
 	KeyManager,
+	RedisKeyStore,
 } from '$lib'
+import { createClient } from 'redis'
 
 if (dev) {
 	process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080'
 }
 
-const app = initializeApp({ projectId: env.FIREBASE_PROJECT_ID })
-const firestore = getFirestore(app)
+// const app = initializeApp({ projectId: env.FIREBASE_PROJECT_ID })
+// const firestore = getFirestore(app)
+const redis = createClient()
+
+await redis.connect()
 
 // const keyStore = new InMemoryKeyStore()
-const keyStore = new FirestoreKeyStore(firestore)
+// const keyStore = new FirestoreKeyStore(firestore)
+const keyStore = await RedisKeyStore.create(redis)
 export const manager = new KeyManager(keyStore)
 
 const bucket = new InMemoryTokenBucket()

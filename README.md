@@ -241,6 +241,6 @@ To complete, plus random ideas
 - [ ] Define languages for bad-words
 - [ ] Tidy example pages, provide better key management (like github) and more varied test enpoints
 - [ ] Auto apply LRU / TTL cache to KeyStore (keys are always immutable)
-- [ ] Implement Redis key store
-- [ ] Implement Firestore key store
+- [x] Implement Redis key store
+- [x] Implement Firestore key store
 - [ ] Check if an endpoint fails to call `.approve(limit)`
