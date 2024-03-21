@@ -1,9 +1,10 @@
 import { error } from '@sveltejs/kit'
 import type { Handle, RequestEvent } from '@sveltejs/kit'
 import type { KeyExtractor } from './key-extractor'
-import type { KeyInfo, KeyManager } from './key-storage'
+import type { KeyManager } from './key-manager'
 import type { TokenBuckets } from './bucket'
 import type { Refill } from './refill'
+import type { KeyInfo } from './key-info'
 
 type Input = Parameters<Handle>[0]
 

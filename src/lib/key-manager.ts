@@ -2,18 +2,12 @@ import { randomBytes, createHash } from 'crypto'
 import basex from 'base-x'
 import BadWords from 'bad-words-next'
 import en from 'bad-words-next/data/en.json'
+import type { KeyInfo } from './key-info'
+import type { KeyStore } from './key-store'
 
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 const base62 = basex(BASE62)
 const badwords = new BadWords({ data: en })
-
-export interface KeyInfo {
-	user: string
-	name: string
-	description: string
-	expires: Date | null
-	permissions: string[]
-}
 
 export class KeyManager {
 	constructor(
@@ -60,33 +54,5 @@ export class KeyManager {
 
 	async retrieve(user: string) {
 		return await this.storage.list(user)
-	}
-}
-
-export interface KeyStore {
-	put(hash: string, info: KeyInfo): Promise<void>
-	get(hash: string): Promise<KeyInfo | null>
-	del(hash: string): Promise<void>
-	list(user: string): Promise<KeyInfo[]>
-}
-
-export class InMemoryKeyStore implements KeyStore {
-	private keys: Map<string, KeyInfo> = new Map()
-
-	async put(hash: string, info: KeyInfo) {
-		this.keys.set(hash, info)
-	}
-
-	async get(hash: string) {
-		return this.keys.get(hash) ?? null
-	}
-
-	async del(hash: string) {
-		this.keys.delete(hash)
-	}
-
-	async list(user: string) {
-		const infos = Array.from(this.keys.values())
-		return infos.filter((info) => info.user === user)
 	}
 }

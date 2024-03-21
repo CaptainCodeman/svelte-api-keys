@@ -1,4 +1,5 @@
-import { InMemoryKeyStore, KeyManager } from './key-storage'
+import { KeyManager } from './key-manager'
+import { InMemoryKeyStore } from './key-store-memory'
 
 describe('storage', () => {
 	// TODO: test manager calls storage, etc...
