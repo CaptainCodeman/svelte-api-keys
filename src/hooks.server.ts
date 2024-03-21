@@ -1,8 +1,28 @@
 import { sequence } from '@sveltejs/kit/hooks'
 import type { Handle } from '@sveltejs/kit'
-import { Handler, KeyExtractor, InMemoryTokenBucket, InMemoryKeyStore, KeyManager } from '$lib'
+import { initializeApp } from 'firebase-admin/app'
+import { getFirestore } from 'firebase-admin/firestore'
+import { env } from '$env/dynamic/private'
+import { dev } from '$app/environment'
+import {
+	Handler,
+	KeyExtractor,
+	InMemoryTokenBucket,
+	InMemoryKeyStore,
+	FirestoreKeyStore,
+	KeyManager,
+} from '$lib'
 
-export const manager = new KeyManager(new InMemoryKeyStore())
+if (dev) {
+	process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080'
+}
+
+const app = initializeApp({ projectId: env.FIREBASE_PROJECT_ID })
+const firestore = getFirestore(app)
+
+// const keyStore = new InMemoryKeyStore()
+const keyStore = new FirestoreKeyStore(firestore)
+export const manager = new KeyManager(keyStore)
 
 const bucket = new InMemoryTokenBucket()
 const extractor = new KeyExtractor({
