@@ -1,33 +1,35 @@
 import { sequence } from '@sveltejs/kit/hooks'
 import type { Handle } from '@sveltejs/kit'
+import { Handler, KeyExtractor, InMemoryTokenBucket, KeyManager } from '$lib'
+
+// Firestore key store:
+/*
 import { initializeApp } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { env } from '$env/dynamic/private'
 import { dev } from '$app/environment'
-import {
-	Handler,
-	KeyExtractor,
-	InMemoryTokenBucket,
-	InMemoryKeyStore,
-	FirestoreKeyStore,
-	KeyManager,
-	RedisKeyStore,
-} from '$lib'
-import { createClient } from 'redis'
-
+import { FirestoreKeyStore } from '$lib'
 if (dev) {
 	process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080'
 }
+const app = initializeApp({ projectId: env.FIREBASE_PROJECT_ID })
+const firestore = getFirestore(app)
+const keyStore = new FirestoreKeyStore(firestore)
+*/
 
-// const app = initializeApp({ projectId: env.FIREBASE_PROJECT_ID })
-// const firestore = getFirestore(app)
-const redis = createClient()
-
+// Redis key store:
+/*
+import { createClient } from 'redis'
+import { RedisKeyStore } from '$lib'
+const redis = createClient({ url: env.REDIS_URL })
 await redis.connect()
-
-// const keyStore = new InMemoryKeyStore()
-// const keyStore = new FirestoreKeyStore(firestore)
 const keyStore = await RedisKeyStore.create(redis)
+*/
+
+// In Memory key store:
+import { InMemoryKeyStore } from '$lib'
+const keyStore = new InMemoryKeyStore()
+
 export const manager = new KeyManager(keyStore)
 
 const bucket = new InMemoryTokenBucket()
