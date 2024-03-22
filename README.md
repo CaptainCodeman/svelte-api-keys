@@ -99,7 +99,7 @@ export async function POST({ locals }) {
 }
 ```
 
-The first parameter to `Refill` is the rate-per-second that the token bucket refills. Read it like a fraction - numerator per denominator. To make it easier to define them, we've provided `SECOND`, `MINUTE`, `HOUR`, `DAY`, and `WEEK` constants for the denominator. In the example above, `30 / MINUTE` would equate to a rate of 2 per second ... meaning a new token would be added every 2 seconds.
+The first parameter to `Refill` is the rate-per-second that the token bucket refills. Read it like a fraction - numerator per denominator. To make it easier to define them, we've provided `SECOND`, `MINUTE`, `HOUR`, `DAY`, and `WEEK` constants for the denominator. In the example above, `30 / MINUTE` would equate to a rate of 0.5 per second ... meaning a new token would be added every 2 seconds.
 
 The second parameter (which is optional, and defaults to 1) is the token bucket size or capacity. This provides both the initial size when a token-bucket is created and the total capacity that the bucket will fill upto. It will then allow a burst of that number of requests without any limiting being applied, at which point the requests have to wait for tokens to be available.
 
