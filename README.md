@@ -1,6 +1,6 @@
 # svelte-api-keys
 
-Secure API Key Generation, Validation, and Rate Limiting for SvelteKit projects.
+Secure API Key Generation, Validation, and Rate Limiting for SvelteKit projects. Create fine-grained access tokens to grant programatic access to your API.
 
 ## Overview
 
@@ -17,7 +17,7 @@ These are the things this package can help with.
 - ✅ Designed to integrate with SvelteKit projects with fluent API
 - ✅ Generate secure API keys in Base62 format for compactness and easy copy-paste
 - ✅ Avoid accidental bad-words in generated keys (taking homoglyphs into account)
-- ✅ Use SHA256 hashing when storing key info, generated keys themselves are never stored
+- ✅ Use SHA256 hashing when storing key info, generated keys themselves are never stored (display once)
 - ✅ Attach name, description, permissions, and expiry to keys (for self-service management of keys)
 - ✅ Extract API key from the request searchParams, HTTP headers, cookies, or use a custom function
 - ✅ Validate keys and return saved info for authorization

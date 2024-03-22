@@ -3,9 +3,9 @@
 </script>
 
 <nav class="m-4">
-	<h1 class="text-3xl font-extrabold tracking-tighter text-gray-600">API Keys for SvelteKit</h1>
+	<h1 class="text-3xl font-extrabold tracking-tighter text-gray-600">Svelte API Keys</h1>
 	<p class="mt-1 text-gray-700">
-		Generate, Validate, and Rate-Limit API keys for your SvelteKit endpoints.
+		Generate, Validate, Authorize and Rate-Limit API keys for your SvelteKit endpoints.
 	</p>
 </nav>
 
