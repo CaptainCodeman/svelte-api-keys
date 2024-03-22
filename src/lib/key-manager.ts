@@ -58,9 +58,7 @@ export class KeyManager {
 		return null
 	}
 
-	async remove(key: string) {
-		const bytes = base62.decode(key)
-		const hash = this.hashFromBytes(bytes)
+	async remove(hash: string) {
 		return await this.storage.del(hash)
 	}
 
