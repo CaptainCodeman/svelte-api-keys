@@ -5,12 +5,16 @@ interface Cached<T> {
 
 // simple LRU cache with TTL
 export class LruCache<T> {
-	private cache: Map<string, Cached<T>>
+	private cache = new Map<string, Cached<T>>()
+	private ttl: number
 
 	constructor(
 		private readonly maxSize = 1024, // default capacity
-		private readonly ttl = 3_600_000, // 1 hours in ms
-	) {}
+		ttl = 3_600, // 1 hours in seconds
+	) {
+		// make ttl comparisons easier by converting to ms
+		this.ttl = ttl * 1000
+	}
 
 	get(key: string): T | undefined {
 		const item = this.cache.get(key)

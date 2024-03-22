@@ -1,6 +1,6 @@
 import { sequence } from '@sveltejs/kit/hooks'
 import type { Handle } from '@sveltejs/kit'
-import { Handler, KeyExtractor, InMemoryTokenBucket, KeyManager } from '$lib'
+import { Handler, KeyExtractor, InMemoryTokenBucket, KeyManager, LruCacheKeyStore } from '$lib'
 
 // Firestore key store:
 /*
@@ -30,7 +30,9 @@ const keyStore = await RedisKeyStore.create(redis)
 import { InMemoryKeyStore } from '$lib'
 const keyStore = new InMemoryKeyStore()
 
-export const manager = new KeyManager(keyStore)
+// caching the in-memory store doesn't make a lot of sense, but would
+// when using any database backed store
+export const manager = new KeyManager(new LruCacheKeyStore(keyStore))
 
 const bucket = new InMemoryTokenBucket()
 const extractor = new KeyExtractor({

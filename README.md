@@ -64,8 +64,10 @@ const buckets = new InMemoryTokenBucket()
 
 // the manager is used by the handler, but will also be use when generating and listing API key info to the user
 // which is why it's exported. The store is independent to the token bucket storage - the in-memory implementation
-// is only suitable for development and testing, persistent implementations are available for Redis or Firestore
-export const manager = new KeyManager(new InMemoryKeyStore())
+// is only suitable for development and testing, persistent implementations are available for Redis or Firestore.
+// when using a database key-store, consider wrapping it with an LruCacheKeyStore to improve performance
+// optionally pass the key byte length to use (default 32 for 256 bits). Lower values will create shorter key strings
+export const manager = new KeyManager(new InMemoryKeyStore(), 16)
 
 // the handle function allows the API system to hook into the SvelteKit request pipeline
 // it will extract the API key from the request, validate & retrieve the key info for it
@@ -101,7 +103,7 @@ The first parameter to `Refill` is the rate-per-second that the token bucket ref
 
 The second parameter (which is optional, and defaults to 1) is the token bucket size or capacity. This provides both the initial size when a token-bucket is created and the total capacity that the bucket will fill upto. It will then allow a burst of that number of requests without any limiting being applied, at which point the requests have to wait for tokens to be available.
 
-If you don't want to hard-code the limits into the app, you can fetch them from a datastore or environment variables. They can be stored as a string and parsed. Note the units are case insensitive, e.g.:
+If you don't want to hard-code the limits into the app, you can fetch them from a datastore or environment variables. They can be stored as a string and parsed. Note the units are case insensitive:
 
 ```ts
 import { env } from '$env/dynamic/private'
@@ -113,19 +115,19 @@ const limit = Refill.parse(env.SOME_ENDPOINT_LIMIT)
 // identical to new Refill(30 / MINUTE, 10)
 ```
 
-With no other parameters, this applies rate limiting globally to the app - the limit would be shared for any endpoints using it (a separate count is kept for each API key though). If the call is approved, the endpoint request will complete as normal. If there are insufficient tokens in the bucket, the server will send a `429 Too Many Requests` response to indicate that the client needs to wait. Appropriate HTTP headers will be added to each response to communicate the limits to the caller - this can be used to avoid making a request that would not be approved, by waiting for the indicated time (how long before the token bucket will refill enough to allow it).
+With no other parameters, this applies rate limiting globally to the app - the limit would be shared for any endpoints using it (a separate count is kept for each API key though). If the call is approved, the endpoint request will complete as normal. If there are insufficient tokens in the bucket, the server will send a `429 Too Many Requests` response to indicate that the client needs to back-off and wait. Appropriate HTTP headers will be added to each response to communicate the limits to the caller - this can be used to avoid making a request that would not be approved, by waiting for the indicated time (how long before the token bucket will refill enough to allow it).
 
 But we can do more ...
 
 #### Cost Per Endpoint
 
-Not all API calls are equal, some may be more expensive and you want to account for this in the rate limiting. One easy way to do that is to just apply a different cost, or consuming more tokens from the bucket. By default, 1 token is consumed per call, but this can be overridden:
+Not all API calls are equal, some may be more expensive and you want to account for this in the rate limiting. One easy way to do that is to just apply a different cost - consuming more tokens from the bucket. By default, 1 token is consumed per call, but this can be overridden:
 
 ```ts
 await locals.api.cost(5).approve(limit)
 ```
 
-If the refill rate was 3 per second, with a size capacity of 10, this would allow 2 initial calls to be made after which they would need to wait 1⅔ seconds between each. Again, this limit would be shared, so more of the smaller cost endpoints could be called in a shorter time.
+If the refill rate was 3 per second, with a size capacity of 10, this would allow 2 initial calls to be made after which they would need to wait 1⅔ seconds between each. Again, this limit would be shared, so more of the smaller cost endpoints could be called in the same period of time.
 
 But we can do more ...
 
@@ -147,10 +149,10 @@ Good practice is to not give too many permissions to a single key, but instead t
 // require a single permission:
 await locals.api.has(`get`).approve(limit)
 
-// require a group of permissions:
+// require a complete set of permissions:
 await locals.api.all([`get`, 'comments']).approve(limit)
 
-// require any permissions specified
+// require any of the permissions specified:
 await locals.api.all([`get`, 'read', 'search']).approve(limit)
 ```
 
@@ -164,7 +166,7 @@ OK, last one, I promise. If you have an anonymous endpoint, there won't be any A
 await locals.api.anonymous().approve(limit)
 ```
 
-All of these options can be combined into a single call:
+All of these options can be combined into a single call, just make sure that the `.approve(limit)` call is last:
 
 ```ts
 await locals.api.name('posts').has('get').cost(2).approve(limit)
@@ -192,7 +194,7 @@ import { fetchTierForUser } from '$lib/database'
 // create handle as before, but give it a different name:
 const handleApi = new Handler(extractor, manager, bucket).handle
 
-//
+// this handle could set the locals.tier based on the api.info.user
 const handleTiers: Handle = async ({ event, resolve }) => {
   const { locals } = event
 
@@ -238,9 +240,9 @@ Finally, should you need them for whatever reason, the `.approve(limit)` method 
 To complete, plus random ideas
 
 - [x] Package and publish
-- [ ] Define languages for bad-words
-- [ ] Tidy example pages, provide better key management (like github) and more varied test enpoints
-- [ ] Auto apply LRU / TTL cache to KeyStore (keys are always immutable)
+- [ ] Define optional languages to use for bad-word filtering
+- [ ] Tidy example pages, provide better key management (mirror github token page) and more varied test enpoints
+- [x] Add LRU + TTL key store cache
 - [x] Implement Redis key store
 - [x] Implement Firestore key store
 - [ ] Check if an endpoint fails to call `.approve(limit)`
