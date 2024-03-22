@@ -237,12 +237,7 @@ Finally, should you need them for whatever reason, the `.approve(limit)` method 
 
 ## TODO
 
-To complete, plus random ideas
+Possible enhancements:
 
-- [x] Package and publish
-- [ ] Define optional languages to use for bad-word filtering
-- [ ] Tidy example pages, provide better key management (mirror github token page) and more varied test enpoints
-- [x] Add LRU + TTL key store cache
-- [x] Implement Redis key store
-- [x] Implement Firestore key store
-- [ ] Check if an endpoint fails to call `.approve(limit)`
+* Warn if an endpoint fails to call `.approve(limit)`, at least after any other api methods
+* Provide a ready-to-go UI for managing keys

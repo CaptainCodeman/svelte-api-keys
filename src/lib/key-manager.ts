@@ -2,12 +2,20 @@ import { randomBytes, createHash } from 'crypto'
 import basex from 'base-x'
 import BadWords from 'bad-words-next'
 import en from 'bad-words-next/data/en.json'
+import es from 'bad-words-next/data/es.json'
+import fr from 'bad-words-next/data/fr.json'
+import de from 'bad-words-next/data/de.json'
 import type { KeyInfo } from './key-info'
 import type { KeyStore } from './key-store'
 
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 const base62 = basex(BASE62)
-const badwords = new BadWords({ data: en })
+const badwords = new BadWords()
+
+badwords.add(en)
+badwords.add(es)
+badwords.add(fr)
+badwords.add(de)
 
 export class KeyManager {
 	constructor(
