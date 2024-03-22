@@ -123,7 +123,8 @@ export class Api {
 		}
 
 		// TODO: hash client IP address (?)
-		const bucketKey = (key || this.event.getClientAddress()) + ':' + this._name
+		const bucketPrefix = info?.user || this.event.getClientAddress()
+		const bucketKey = bucketPrefix + ':' + this._name
 
 		// apply rate limiting
 		const result = await this.bucket.consume(bucketKey, refill, this._cost)
