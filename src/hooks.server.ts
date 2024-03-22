@@ -30,32 +30,22 @@ const keyStore = await RedisKeyStore.create(redis)
 import { InMemoryKeyStore } from '$lib'
 const keyStore = new InMemoryKeyStore()
 
-// caching the in-memory store doesn't make a lot of sense, but would
-// when using any database backed store
+// caching the in-memory store doesn't make a lot of sense, but
+// would when using any database backed store implementation
 export const manager = new KeyManager(new LruCacheKeyStore(keyStore))
 
 const bucket = new InMemoryTokenBucket()
-const extractor = new KeyExtractor({
-	searchParam: 'key',
-	httpHeader: 'x-api-key',
-	cookie: 'api_key',
-	custom: async (_event, key) => {
-		if (key) {
-			const idx = key.indexOf('_')
-			if (idx >= 0) {
-				return key.substring(idx + 1)
-			}
-		}
-
-		return key
-	},
-})
+const extractor = new KeyExtractor({ searchParam: 'key', httpHeader: 'x-api-key' })
 
 export const handleApi = new Handler(extractor, manager, bucket).handle
 
 export const handleTiers: Handle = async ({ event, resolve }) => {
 	const { locals } = event
 
+	// simulate usage tiers:
+	// free = no key
+	// premium = key name equal to 'prod'
+	// basic = everything else
 	locals.tier = locals.api.info ? (locals.api.info.name === 'prod' ? 'premium' : 'basic') : 'free'
 
 	return await resolve(event)
