@@ -1,11 +1,12 @@
 import { ErrorReply, SchemaFieldTypes, createClient } from 'redis'
 import type { KeyStore } from './key-store'
-import type { KeyInfo } from './key-info'
+import type { KeyInfoData } from './key-info'
 
 type Redis = ReturnType<typeof createClient>
 
 export class RedisKeyStore implements KeyStore {
 	static async create(redis: Redis, prefix = 'api:') {
+		// ensure the search index exists
 		try {
 			await redis.ft.info(prefix + 'index')
 		} catch (err: any) {
@@ -14,7 +15,8 @@ export class RedisKeyStore implements KeyStore {
 					prefix + 'index',
 					{
 						user: SchemaFieldTypes.TAG,
-						// really only the user is needed currently, but this may be useful to audit what keys exist or are near expiry
+						// only the user is really needed currently, but it may be useful to
+						// audit what keys with which permission exist or are near expiry ...
 						permissions: SchemaFieldTypes.TAG,
 						expires: SchemaFieldTypes.NUMERIC,
 					},
@@ -36,7 +38,7 @@ export class RedisKeyStore implements KeyStore {
 		private readonly prefix: string,
 	) {}
 
-	async put(hash: string, info: KeyInfo) {
+	async put(hash: string, info: KeyInfoData) {
 		await this.redis.hSet(this.prefix + hash, {
 			user: info.user,
 			name: info.name,
@@ -55,7 +57,7 @@ export class RedisKeyStore implements KeyStore {
 			description: data.description,
 			permissions: data.permissions.split(','),
 			expires: data.expires ? new Date(parseFloat(data.expires) * 1000) : null,
-		} as KeyInfo
+		} as KeyInfoData
 	}
 
 	async del(hash: string) {
@@ -69,6 +71,7 @@ export class RedisKeyStore implements KeyStore {
 		const infos = result.documents.map((doc) => {
 			const data = doc.value as Record<string, string>
 			return {
+				hash: doc.id,
 				user: data.user,
 				name: data.name,
 				description: data.description,

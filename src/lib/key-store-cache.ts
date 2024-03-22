@@ -1,9 +1,9 @@
-import type { KeyInfo } from './key-info'
+import type { KeyInfo, KeyInfoData } from './key-info'
 import type { KeyStore } from './key-store'
 import { LruCache } from './lru-cache'
 
 export class LruCacheKeyStore implements KeyStore {
-	private cache: LruCache<KeyInfo>
+	private cache: LruCache<KeyInfoData>
 
 	constructor(
 		private readonly store: KeyStore,
@@ -13,9 +13,9 @@ export class LruCacheKeyStore implements KeyStore {
 		this.cache = new LruCache<KeyInfo>(maxSize, ttl)
 	}
 
-	async put(hash: string, info: KeyInfo) {
+	async put(hash: string, info: KeyInfoData) {
 		this.cache.set(hash, info)
-		await this.store.put(hash, info)
+		return await this.store.put(hash, info)
 	}
 
 	async get(hash: string) {

@@ -4,18 +4,19 @@ import type {
 	CollectionReference,
 	QueryDocumentSnapshot,
 } from 'firebase-admin/firestore'
-import type { KeyInfo } from './key-info'
+import type { KeyInfo, KeyInfoData } from './key-info'
 import type { KeyStore } from './key-store'
 
 const keyInfoConverter: FirestoreDataConverter<KeyInfo> = {
 	toFirestore: (info) => {
-		return info
+		const { hash, ...data } = info
+		return data
 	},
 
 	fromFirestore: (snapshot: QueryDocumentSnapshot) => {
 		const data = snapshot.data()
 		const expires = data.expires ? data.expires.toDate() : null
-		return { ...data, expires } as KeyInfo
+		return { hash: snapshot.id, ...data, expires } as KeyInfo
 	},
 }
 
@@ -29,8 +30,8 @@ export class FirestoreKeyStore implements KeyStore {
 		this.collection = this.firestore.collection(this.name).withConverter(keyInfoConverter)
 	}
 
-	async put(hash: string, info: KeyInfo) {
-		await this.collection.doc(hash).set(info)
+	async put(hash: string, info: KeyInfoData) {
+		await this.collection.doc(hash).set({ hash, ...info })
 	}
 
 	async get(hash: string) {

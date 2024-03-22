@@ -5,7 +5,7 @@ import en from 'bad-words-next/data/en.json'
 import es from 'bad-words-next/data/es.json'
 import fr from 'bad-words-next/data/fr.json'
 import de from 'bad-words-next/data/de.json'
-import type { KeyInfo } from './key-info'
+import type { KeyInfoData } from './key-info'
 import type { KeyStore } from './key-store'
 
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -27,7 +27,7 @@ export class KeyManager {
 		return createHash('sha256').update(bytes).digest('hex')
 	}
 
-	async generate(info: KeyInfo) {
+	async generate(info: KeyInfoData) {
 		let key: string
 		let bytes: Buffer
 
@@ -42,8 +42,8 @@ export class KeyManager {
 		const hash = this.hashFromBytes(bytes)
 		await this.storage.put(hash, info)
 
-		// return the key
-		return key
+		// return the key and the hash
+		return { key, hash }
 	}
 
 	async validate(key: string | null) {
@@ -51,7 +51,11 @@ export class KeyManager {
 
 		const bytes = base62.decode(key)
 		const hash = this.hashFromBytes(bytes)
-		return await this.storage.get(hash)
+		const data = await this.storage.get(hash)
+		if (data) {
+			return { hash, ...data }
+		}
+		return null
 	}
 
 	async remove(key: string) {

@@ -1,10 +1,10 @@
-import type { KeyInfo } from './key-info'
+import type { KeyInfoData } from './key-info'
 import type { KeyStore } from './key-store'
 
 export class InMemoryKeyStore implements KeyStore {
-	private keys: Map<string, KeyInfo> = new Map()
+	private keys: Map<string, KeyInfoData> = new Map()
 
-	async put(hash: string, info: KeyInfo) {
+	async put(hash: string, info: KeyInfoData) {
 		this.keys.set(hash, info)
 	}
 
@@ -17,7 +17,9 @@ export class InMemoryKeyStore implements KeyStore {
 	}
 
 	async list(user: string) {
-		const infos = Array.from(this.keys.values())
-		return infos.filter((info) => info.user === user)
+		const infos = Array.from(this.keys.entries())
+		return infos
+			.filter(([_, info]) => info.user === user)
+			.map(([hash, info]) => ({ hash, ...info }))
 	}
 }

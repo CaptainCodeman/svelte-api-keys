@@ -14,7 +14,7 @@ describe('storage', () => {
 			permissions: ['read'],
 		}
 
-		const key = await manager.generate(info)
+		const { key } = await manager.generate(info)
 		const loaded = await manager.validate(key)
 		expect(loaded).deep.eq(info)
 		const notfound = await manager.validate('notakey')

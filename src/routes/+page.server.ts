@@ -10,7 +10,7 @@ export const actions = {
 		const expires = _expires ? new Date(_expires) : null
 		const permissions = form.getAll('permissions') as string[]
 
-		const key = await manager.generate({ user, expires, name, description, permissions })
+		const { key, hash } = await manager.generate({ user, expires, name, description, permissions })
 
 		return { type: 'generate', key }
 	},
