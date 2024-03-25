@@ -76,7 +76,7 @@ export class Api {
 		return this
 	}
 
-	async approve(refill: Refill) {
+	async limit(refill: Refill) {
 		const { key, info } = this
 
 		// if not anonymouse, key must be provided

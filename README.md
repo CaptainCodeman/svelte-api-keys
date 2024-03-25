@@ -77,21 +77,21 @@ export const handle = new Handler(extractor, manager, buckets).handle
 
 ### Use the API in endpoints
 
-Any request will now have an `api` object available on `locals`. This will have a `key`, and `info` property depending on whether an API Key was sent with the request and whether it was valid. It also provides a fluent API that any endpoint can use to `approve()` the request by passing in the rate limit to apply.
+Any request will now have an `api` object available on `locals`. This will have a `key`, and `info` property depending on whether an API Key was sent with the request and whether it was valid. It also provides a fluent API that any endpoint can use to `limit()` the request by passing in the refill rate to apply.
 
 #### Simple Global Limit
 
-The simplest rate-limiting just requires awaiting a call to `locals.api.approve(limit)` where `limit` is a token-bucket refill rate and size:
+The simplest rate-limiting just requires awaiting a call to `locals.api.limit(rate)` where `rate` is a token-bucket refill rate and size:
 
 ```ts
 import { json } from '@sveltejs/kit'
 import { Refill, MINUTE } from 'svelte-api-keys'
 import { fetchData } from '$lib/database'
 
-const limit = new Refill(30 / MINUTE, 10)
+const rate = new Refill(30 / MINUTE, 10)
 
 export async function POST({ locals }) {
-  await locals.api.approve(limit)
+  await locals.api.limit(rate)
 
   const data = await fetchData()
 
@@ -109,8 +109,8 @@ If you don't want to hard-code the limits into the app, you can fetch them from 
 import { env } from '$env/dynamic/private'
 import { Refill } from 'svelte-api-keys'
 
-// SOME_ENDPOINT_LIMIT="30 / minute, 10"
-const limit = Refill.parse(env.SOME_ENDPOINT_LIMIT)
+// SOME_ENDPOINT_RATE_LIMIT="30 / minute, 10"
+const rate = Refill.parse(env.SOME_ENDPOINT_RATE_LIMIT)
 
 // identical to new Refill(30 / MINUTE, 10)
 ```
@@ -124,7 +124,7 @@ But we can do more ...
 Not all API calls are equal, some may be more expensive and you want to account for this in the rate limiting. One easy way to do that is to just apply a different cost - consuming more tokens from the bucket. By default, 1 token is consumed per call, but this can be overridden:
 
 ```ts
-await locals.api.cost(5).approve(limit)
+await locals.api.cost(5).limit(rate)
 ```
 
 If the refill rate was 3 per second, with a size capacity of 10, this would allow 2 initial calls to be made after which they would need to wait 1⅔ seconds between each. Again, this limit would be shared, so more of the smaller cost endpoints could be called in the same period of time.
@@ -136,7 +136,7 @@ But we can do more ...
 Maybe you want to have different independent rate limits for different endpoints or groups of endpoints? By adding a name, the token-buckets will be separated:
 
 ```ts
-await locals.api.name(`comments`).approve(limit)
+await locals.api.name(`comments`).limit(rate)
 ```
 
 But we can do more ...
@@ -147,13 +147,13 @@ Good practice is to not give too many permissions to a single key, but instead t
 
 ```ts
 // require a single permission:
-await locals.api.has(`get`).approve(limit)
+await locals.api.has(`get`).limit(rate)
 
 // require a complete set of permissions:
-await locals.api.all([`get`, 'comments']).approve(limit)
+await locals.api.all([`get`, 'comments']).limit(rate)
 
 // require any of the permissions specified:
-await locals.api.all([`get`, 'read', 'search']).approve(limit)
+await locals.api.all([`get`, 'read', 'search']).limit(rate)
 ```
 
 But we can do more ...
@@ -163,13 +163,13 @@ But we can do more ...
 OK, last one, I promise. If you have an anonymous endpoint, there won't be any API key provided, and no KEY info to check against, so the permission checks won't be used. But we can still apply rate limiting and allow a call to be made without a key (otherwise, a missing key would result in a `401` response and an invalid or expired key would return `403`):
 
 ```ts
-await locals.api.anonymous().approve(limit)
+await locals.api.anonymous().limit(rate)
 ```
 
-All of these options can be combined into a single call, just make sure that the `.approve(limit)` call is last:
+All of these options can be combined into a single call, just make sure that the `.limit(rate)` call is last:
 
 ```ts
-await locals.api.name('posts').has('get').cost(2).approve(limit)
+await locals.api.name('posts').has('get').cost(2).limit(rate)
 ```
 
 #### Change Limits based on tiers
@@ -224,8 +224,8 @@ const rates = {
 
 export async function POST({ locals }) {
   const { tier } = locals
-  const limit = rates[tier]
-  await locals.api.approve(limit)
+  const rate = rates[tier]
+  await locals.api.limit(rate)
 
   const data = await fetchData()
 
@@ -233,11 +233,11 @@ export async function POST({ locals }) {
 }
 ```
 
-Finally, should you need them for whatever reason, the `.approve(limit)` method returns details about the result of the call (which are also set as HTTP Response headers)
+Finally, should you need them for whatever reason, the `.limit(rate)` method returns details about the result of the call (which are also set as HTTP Response headers)
 
 ## TODO
 
 Possible enhancements:
 
-* Warn if an endpoint fails to call `.approve(limit)`, at least after any other api methods
+* Warn if an endpoint fails to call `.limit(rate)`, at least after any other api methods
 * Provide a ready-to-go UI for managing keys

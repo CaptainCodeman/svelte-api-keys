@@ -1,6 +1,12 @@
 import { sequence } from '@sveltejs/kit/hooks'
 import type { Handle } from '@sveltejs/kit'
-import { Handler, KeyExtractor, InMemoryTokenBucket, KeyManager, LruCacheKeyStore } from '$lib'
+import {
+	Handler,
+	KeyExtractor,
+	InMemoryTokenBucket,
+	KeyManager,
+	LruCacheKeyStore,
+} from 'svelte-api-keys'
 
 // Firestore key store:
 /*
@@ -8,7 +14,7 @@ import { initializeApp } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { env } from '$env/dynamic/private'
 import { dev } from '$app/environment'
-import { FirestoreKeyStore } from '$lib'
+import { FirestoreKeyStore } from 'svelte-api-keys'
 if (dev) {
 	process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080'
 }
@@ -20,14 +26,14 @@ const keyStore = new FirestoreKeyStore(firestore)
 // Redis key store:
 /*
 import { createClient } from 'redis'
-import { RedisKeyStore } from '$lib'
+import { RedisKeyStore } from 'svelte-api-keys'
 const redis = createClient({ url: env.REDIS_URL })
 await redis.connect()
 const keyStore = await RedisKeyStore.create(redis)
 */
 
 // In Memory key store:
-import { InMemoryKeyStore } from '$lib'
+import { InMemoryKeyStore } from 'svelte-api-keys'
 const keyStore = new InMemoryKeyStore()
 
 // caching the in-memory store doesn't make a lot of sense, but

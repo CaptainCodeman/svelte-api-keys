@@ -8,31 +8,47 @@
 	const permissions = ['read', 'write', 'search', 'delete']
 	const tokens = web_storage('tokens', [] as any[])
 
-	$: console.log($tokens)
-
 	let key = ''
+	let pending: any[] = []
 	let results: any[] = []
 
 	const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-	async function onSubmit(e: SubmitEvent) {
+	function onSubmit(e: SubmitEvent) {
 		e.preventDefault()
 		const form = e.target as HTMLFormElement
 		const data = new FormData(form)
 		const key = data.get('key') as string
-		const name = data.get('name') as string
-		for (let i = 0; i < 10; i++) {
-			const resp = await fetch('/?key=' + key, {
-				method: 'PUT',
-				body: JSON.stringify({ name }),
-			})
-			const data = resp.status === 200 ? await resp.json() : {}
-			results = [{ ts: new Date(), status: resp.status, data }, ...results]
-			const retryAfter = parseInt(resp.headers.get('RateLimit-Reset') || '0')
-			if (retryAfter) {
-				await delay(retryAfter * 1000)
-			}
+		const count = parseInt(data.get('count') as string)
+		const method = data.get('method') as string
+		const endpoint = data.get('endpoint') as string
+
+		// add requests to pending queue
+		for (let i = 0; i < count; i++) {
+			pending = [...pending, { key, method, endpoint }]
 		}
+
+		// start processing if not already running
+		if (pending.length === count) process()
+	}
+
+	async function process() {
+		if (pending.length === 0) return
+
+		const req = pending[0]
+		const { endpoint, method } = req
+		const resp = await fetch(`/${endpoint}?key=${key}`, { method, body: method === 'put' ? '{}' : null })
+		const data = resp.status === 200 ? await resp.json() : {}
+		results = [{ ts: new Date(), method, endpoint, status: resp.status, data }, ...results]
+		if (resp.status === 200) {
+			pending = pending.filter(p => p !== req)
+		}
+		const retryAfter = parseInt(resp.headers.get('RateLimit-Reset') || '0')
+		if (retryAfter) {
+			await delay(retryAfter * 1000)
+		}
+
+		await process()
 	}
 
 	$: handleForm(form)
@@ -134,13 +150,32 @@
 
 <form method="post" on:submit={onSubmit}>
 	<input type="text" name="key" placeholder="api key" value={key} />
+	<input type="number" name="count" value="5" min="1" max="10" />
+	<label>
+		<input type="radio" name="method" value="GET" checked/>
+		GET
+	</label>
+	<label>
+		<input type="radio" name="method" value="PUT" />
+		PUT
+	</label>
+	<label>
+		<input type="radio" name="endpoint" value="cheap" checked/>
+		Cheap
+	</label>
+	<label>
+		<input type="radio" name="endpoint" value="expensive" />
+		Expensive
+	</label>
 	<button>Submit</button>
 </form>
+
+<p>Pending: {pending.length}</p>
 
 <button on:click={() => (results = [])}>Clear</button>
 
 <li>
 	{#each results as result}
-		<ul>{result.ts} {result.status} {JSON.stringify(result.data)}</ul>
+		<ul>{result.ts} {result.method} {result.endpoint} {result.status} {JSON.stringify(result.data)}</ul>
 	{/each}
 </li>
