@@ -172,7 +172,7 @@
   <label for="rate" class="w-32 text-sm font-medium text-gray-700">Request Count</label>
 	<input type="number" name="rate" id="rate" class="w-16 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" min="1" max="20" step="1" bind:value={count}>
 	<button class="ml-4 rounded bg-green-600 px-2 py-1 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600" on:click={enqueue}>Consume</button>
-	<button class="ml-2 rounded bg-red-600 px-2 py-1 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:bg-red-700" on:click={() => pending = []} disabled={pending.length > 0}>Clear Pending</button>
+	<button class="ml-2 rounded bg-red-600 px-2 py-1 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:bg-red-700" on:click={() => pending.length = 0} disabled={pending.length === 0}>Clear Pending</button>
 </div>
 
 <h2 class="mt-4 text-xl font-bold tracking-tight text-gray-700">Token Bucket</h2>
