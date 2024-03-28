@@ -2,7 +2,7 @@ import { TokenBucket } from './bucket'
 import { Refill } from './refill'
 
 export class InMemoryTokenBucket extends TokenBucket {
-	private readonly buckets = new Map<string, { tokens: number; updated: number }>()
+	protected readonly buckets = new Map<string, { tokens: number; updated: number }>()
 
 	async consume(key: string, refill: Refill, count = 1) {
 		const now = Date.now()
