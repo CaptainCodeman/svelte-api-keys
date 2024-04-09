@@ -1,4 +1,4 @@
-import { manager } from '../hooks.server'
+import { api_keys } from '../hooks.server'
 
 export const actions = {
 	// generate a new API key
@@ -11,7 +11,7 @@ export const actions = {
 		const expires = _expires ? new Date(_expires) : null
 		const permissions = form.getAll('permissions') as string[]
 
-		const { key, hash } = await manager.generate({ user, expires, name, description, permissions })
+		const { key, hash } = await api_keys.generate({ user, expires, name, description, permissions })
 
 		return { type: 'generate', key, hash, user, expires, name, description, permissions }
 	},
@@ -19,21 +19,21 @@ export const actions = {
 	validate: async ({ request }) => {
 		const form = await request.formData()
 		const key = form.get('key') as string
-		const info = await manager.validate(key)
+		const info = await api_keys.validate(key)
 		return { type: 'validate', info }
 	},
 
 	list: async ({ request }) => {
 		const form = await request.formData()
 		const user = form.get('user') as string
-		const infos = await manager.retrieve(user)
+		const infos = await api_keys.retrieve(user)
 		return { type: 'list', infos }
 	},
 
 	delete: async ({ request }) => {
 		const form = await request.formData()
 		const hash = form.get('hash') as string
-		await manager.remove(hash)
+		await api_keys.remove(hash)
 		return { type: 'delete', hash }
 	},
 }

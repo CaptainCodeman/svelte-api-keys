@@ -11,10 +11,12 @@
 	let count = $state(1)
 	let cost = $state(1)
 	let refill = $derived(new Refill(rate, size))
-	let pending: { count: number, cost: number }[] = $state([])
+	let pending: { count: number; cost: number }[] = $state([])
 
 	class TokenBucket extends InMemoryTokenBucket {
-		get bucket() { return this.buckets.get('') }
+		get bucket() {
+			return this.buckets.get('')
+		}
 	}
 
 	const tb = new TokenBucket()
@@ -45,7 +47,7 @@
 						fill: true,
 						data: [],
 					},
-				]
+				],
 			},
 			options: {
 				events: ['click'],
@@ -55,7 +57,7 @@
 					legend: {
 						position: 'bottom',
 						align: 'end',
-					}
+					},
 				},
 				scales: {
 					x: {
@@ -75,16 +77,16 @@
 							displayFormats: {
 								minute: 'ss',
 								second: 'ss',
-							}
+							},
 						},
 					},
 					y: {
 						min: 0,
 						suggestedMax: 20,
 						position: 'right',
-					}
+					},
 				},
-			}
+			},
 		}
 
 		// trigger initial fill
@@ -120,7 +122,7 @@
 				const { allowed } = await tb.consume('', refill, total)
 				if (allowed) {
 					// remove filled requests
-					pending = pending.filter(p => p.count)
+					pending = pending.filter((p) => p.count)
 					chart.data.datasets[0].data.push({
 						x: bucket.updated,
 						y: total,
@@ -159,41 +161,87 @@
 <h2 class="text-xl font-bold tracking-tight text-gray-700">Token Bucket Chart</h2>
 <p class="mt-1 text-base text-gray-700">Visualizing how a Token Bucket works for rate-limiting.</p>
 
-<div class="flex gap-3 mt-4">
+<div class="mt-4 flex gap-3">
 	<div class="flex items-center">
 		<label for="size" class="w-32 text-sm font-medium text-gray-700">Bucket Size</label>
-		<input type="number" name="size" id="size" class="w-16 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" min="1" max="20" bind:value={size}>
+		<input
+			type="number"
+			name="size"
+			id="size"
+			class="w-16 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+			min="1"
+			max="20"
+			bind:value={size}
+		/>
 	</div>
 
 	<div class="flex items-center">
 		<label for="rate" class="w-32 text-sm font-medium text-gray-700">Refill Rate</label>
-		<input type="number" name="rate" id="rate" class="w-16 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" min="0.1" max="5" step="0.1" bind:value={rate}>
-		<span class="ml-4 text-sm font-medium text-gray-700">per Second / {Math.round(rate * 60)} per Minute</span>
+		<input
+			type="number"
+			name="rate"
+			id="rate"
+			class="w-16 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+			min="0.1"
+			max="5"
+			step="0.1"
+			bind:value={rate}
+		/>
+		<span class="ml-4 text-sm font-medium text-gray-700"
+			>per Second / {Math.round(rate * 60)} per Minute</span
+		>
 	</div>
 </div>
 
-<div class="flex gap-3 mt-2">
+<div class="mt-2 flex gap-3">
 	<div class="flex items-center">
 		<label for="rate" class="w-32 text-sm font-medium text-gray-700">Request Cost</label>
-		<input type="number" name="rate" id="rate" class="w-16 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" min="1" max="10" step="1" bind:value={cost}>
+		<input
+			type="number"
+			name="rate"
+			id="rate"
+			class="w-16 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+			min="1"
+			max="10"
+			step="1"
+			bind:value={cost}
+		/>
 	</div>
 
 	<div class="flex items-center">
 		<label for="rate" class="w-32 text-sm font-medium text-gray-700">Request Count</label>
-		<input type="number" name="rate" id="rate" class="w-16 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" min="1" max="20" step="1" bind:value={count}>
-		<button class="ml-4 rounded bg-green-600 px-2 py-1 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600" on:click={enqueue}>Consume</button>
-		<button class="ml-2 rounded bg-red-600 px-2 py-1 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:bg-red-700" on:click={() => pending.length = 0} disabled={pending.length === 0}>Clear Pending</button>
-		<ul class="ml-2 flex items-center text-xs gap-2">
-		{#each pending as { count, cost } }
-			<li class="border border-gray-300 bg-gray-100 text-gray-700 px-1 py-0.5 rounded-sm">{count}x{cost}</li>
-		{/each}
+		<input
+			type="number"
+			name="rate"
+			id="rate"
+			class="w-16 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+			min="1"
+			max="20"
+			step="1"
+			bind:value={count}
+		/>
+		<button
+			class="ml-4 rounded bg-green-600 px-2 py-1 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
+			on:click={enqueue}>Consume</button
+		>
+		<button
+			class="ml-2 rounded bg-red-600 px-2 py-1 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:bg-red-700"
+			on:click={() => (pending.length = 0)}
+			disabled={pending.length === 0}>Clear Pending</button
+		>
+		<ul class="ml-2 flex items-center gap-2 text-xs">
+			{#each pending as { count, cost }}
+				<li class="rounded-sm border border-gray-300 bg-gray-100 px-1 py-0.5 text-gray-700">
+					{count}x{cost}
+				</li>
+			{/each}
 		</ul>
 	</div>
 </div>
 
 <h3 class="mt-6 text-lg font-bold tracking-tight text-gray-700">Capacity & Requests</h3>
-<p class="mt-1 text-base text-gray-700">Chart of token bucket capacity and requests </p>
+<p class="mt-1 text-base text-gray-700">Chart of token bucket capacity and requests</p>
 
-<div class="mt-2 w-full h-96 relative">
+<div class="relative mt-2 h-96 w-full">
 	<canvas use:chart></canvas>
 </div>
