@@ -1,4 +1,4 @@
-import { Refill } from './refill'
+import type { Refill } from './refill'
 
 export interface BucketResult {
 	allowed: boolean

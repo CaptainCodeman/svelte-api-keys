@@ -18,8 +18,12 @@ describe('storage', () => {
 
 		const { key } = await manager.generate(info)
 		const loaded = await manager.validate(key)
-		expect(loaded).deep.eq(info)
+		expect(loaded).not.null
+		if (loaded) {
+			const { hash, ...data } = loaded
+			expect(data).deep.eq(info)
+		}
 		const notfound = await manager.validate('notakey')
-		expect(notfound).undefined
+		expect(notfound).null
 	})
 })

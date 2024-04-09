@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit'
 import type { RequestEvent } from '@sveltejs/kit'
 import type { TokenBuckets } from './bucket'
-import type { Refill } from './refill'
 import type { KeyInfo } from './key-info'
+import type { Refill } from './refill'
 
 export class Api {
 	private _name = ''
@@ -11,6 +11,12 @@ export class Api {
 	private _has = ''
 	private _any: string[] = []
 	private _all: string[] = []
+
+	public readonly SECOND = 1
+	public readonly MINUTE = this.SECOND * 60
+	public readonly HOUR = this.MINUTE * 60
+	public readonly DAY = this.HOUR * 24
+	public readonly WEEK = this.DAY * 7
 
 	constructor(
 		private readonly event: RequestEvent,
@@ -53,6 +59,12 @@ export class Api {
 	}
 
 	async limit(refill: Refill) {
+		if (refill.rate <= 0) throw `refill rate must be greater than 0`
+		if (refill.size < 1) throw `refill size must be at least 1`
+		if (refill.size < this._cost) {
+			console.warn(`refill size must be at least equal to cost (${this._cost})`)
+		}
+
 		const { key, info } = this
 
 		// if not anonymouse, key must be provided

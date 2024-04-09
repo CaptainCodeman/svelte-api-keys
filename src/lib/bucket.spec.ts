@@ -1,11 +1,11 @@
 import { test } from 'vitest'
-import { MINUTE, Refill } from './refill'
+import { MINUTE } from './refill'
 import type { TokenBuckets } from './bucket'
 
 export function runTests(name: string, store: TokenBuckets) {
 	describe(name, () => {
 		test('runTests', async () => {
-			const refill = new Refill(30 / MINUTE, 10)
+			const refill = { rate: 30 / MINUTE, size: 10 }
 
 			const { limit, remaining, reset, policy } = await store.consume('', refill)
 

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { InMemoryTokenBucket } from 'svelte-api-keys/bucket-memory'
-	import { Refill } from 'svelte-api-keys/refill'
 	import { Chart, type ChartConfiguration } from 'chart.js/auto'
 	import ChartStreaming from '@robloche/chartjs-plugin-streaming'
 	import { enUS } from 'date-fns/locale'
@@ -10,7 +9,7 @@
 	let rate = $state(0.5)
 	let count = $state(1)
 	let cost = $state(1)
-	let refill = $derived(new Refill(rate, size))
+	let refill = $derived({ rate, size })
 	let pending: { count: number; cost: number }[] = $state([])
 
 	class TokenBucket extends InMemoryTokenBucket {

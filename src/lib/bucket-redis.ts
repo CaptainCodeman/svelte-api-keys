@@ -1,6 +1,6 @@
 import { createClient } from 'redis'
 import { TokenBucket } from './bucket'
-import { Refill } from './refill'
+import type { Refill } from './refill'
 
 type Redis = ReturnType<typeof createClient>
 

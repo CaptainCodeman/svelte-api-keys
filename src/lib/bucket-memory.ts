@@ -1,5 +1,5 @@
 import { TokenBucket } from './bucket'
-import { Refill } from './refill'
+import type { Refill } from './refill'
 
 export class InMemoryTokenBucket extends TokenBucket {
 	protected readonly buckets = new Map<string, { tokens: number; updated: number }>()

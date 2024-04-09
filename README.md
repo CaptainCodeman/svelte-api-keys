@@ -170,10 +170,10 @@ The simplest rate-limiting just requires awaiting a call to `locals.api.limit(ra
 
 ```ts
 import { json } from '@sveltejs/kit'
-import { Refill, MINUTE } from 'svelte-api-keys'
+import { MINUTE } from 'svelte-api-keys'
 import { fetchData } from '$lib/database'
 
-const rate = new Refill(30 / MINUTE, 10)
+const rate = { rate: 30 / MINUTE, size: 10 }
 
 export async function POST({ locals }) {
   await locals.api.limit(rate)
@@ -184,20 +184,20 @@ export async function POST({ locals }) {
 }
 ```
 
-The first parameter to `Refill` is the rate-per-second that the token bucket refills. Read it like a fraction - numerator per denominator. To make it easier to define them, we've provided `SECOND`, `MINUTE`, `HOUR`, `DAY`, and `WEEK` constants for the denominator. In the example above, `30 / MINUTE` would equate to a rate of 0.5 per second ... meaning a new token would be added every 2 seconds.
+The `rate` property is the rate-per-second that the token bucket refills. Read it like a fraction - numerator per denominator. To make it easier to define them, we've provided `SECOND`, `MINUTE`, `HOUR`, `DAY`, and `WEEK` constants for the denominator. In the example above, `30 / MINUTE` would equate to a rate of 0.5 per second ... meaning a new token would be added every 2 seconds.
 
-The second parameter (which is optional, and defaults to 1) is the token bucket size or capacity. This provides both the initial size when a token-bucket is created and the total capacity that the bucket will fill upto. It will then allow a burst of that number of requests without any limiting being applied, at which point the requests have to wait for tokens to be available.
+The `size` property is the token bucket capacity. This provides both the initial size when a token-bucket is created and the total capacity that the bucket will ever fill upto. It will then allow a burst of that number of requests without any limiting being applied, at which point the requests have to wait for tokens to become available (at the refill rate).
 
 If you don't want to hard-code the limits into the app, you can fetch them from a datastore or environment variables. They can be stored as a string and parsed. Note the units are case insensitive:
 
 ```ts
 import { env } from '$env/dynamic/private'
-import { Refill } from 'svelte-api-keys'
+import { parseRefill } from 'svelte-api-keys'
 
 // SOME_ENDPOINT_RATE_LIMIT="30 / minute, 10"
-const rate = Refill.parse(env.SOME_ENDPOINT_RATE_LIMIT)
+const rate = parseRefill(env.SOME_ENDPOINT_RATE_LIMIT)
 
-// identical to new Refill(30 / MINUTE, 10)
+// identical to { rate: 30 / MINUTE, size: 10 }
 ```
 
 With no other parameters, this applies rate limiting globally to the app - the limit would be shared for any endpoints using it (a separate count is kept for each API key though). If the call is approved, the endpoint request will complete as normal. If there are insufficient tokens in the bucket, the server will send a `429 Too Many Requests` response to indicate that the client needs to back-off and wait. Appropriate HTTP headers will be added to each response to communicate the limits to the caller - this can be used to avoid making a request that would not be approved, by waiting for the indicated time (how long before the token bucket will refill enough to allow it).
@@ -296,13 +296,13 @@ Now our endpoints have access to a `locals.tier` value which can be used to sele
 
 ```ts
 import { json } from '@sveltejs/kit'
-import { MINUTE, Refill } from 'svelte-api-keys'
+import { MINUTE } from 'svelte-api-keys'
 import { fetchData } from '$lib/database'
 
 const rates = {
-  basic: new Refill(10 / MINUTE, 1),
-  premium: new Refill(60 / MINUTE, 20),
-  enterprise: new Refill(300 / MINUTE, 60),
+  basic: { rate: 10 / MINUTE, size: 1 },
+  premium: { rate: 60 / MINUTE, size: 20 },
+  enterprise: { rate: 300 / MINUTE, size: 60 },
 }
 
 export async function POST({ locals }) {
