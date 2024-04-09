@@ -1,4 +1,4 @@
-import type { Api } from './handler'
+import type { Api } from './api'
 
 export interface ApiLocals {
 	api: Api

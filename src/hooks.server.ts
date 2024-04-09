@@ -1,51 +1,51 @@
 import { sequence } from '@sveltejs/kit/hooks'
 import type { Handle } from '@sveltejs/kit'
-import {
-	Handler,
-	KeyExtractor,
-	InMemoryTokenBucket,
-	KeyManager,
-	LruCacheKeyStore,
-} from 'svelte-api-keys'
+import { ApiKeys } from 'svelte-api-keys'
 
-// Firestore key store:
+// simple, for development / demo use, is to use in-memory implementations
+import { InMemoryKeyStore, InMemoryTokenBucket } from 'svelte-api-keys'
+
+const storage = new InMemoryKeyStore()
+const buckets = new InMemoryTokenBucket()
+
+// Firestore for key storage (which will benefit from the LruCache):
 /*
 import { initializeApp } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { env } from '$env/dynamic/private'
 import { dev } from '$app/environment'
-import { FirestoreKeyStore } from 'svelte-api-keys'
+import { FirestoreKeyStore, LruCacheKeyStore } from 'svelte-api-keys'
+
 if (dev) {
 	process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080'
 }
+
 const app = initializeApp({ projectId: env.FIREBASE_PROJECT_ID })
 const firestore = getFirestore(app)
-const keyStore = new FirestoreKeyStore(firestore)
+const storage = new LruCacheKeyStore(new FirestoreKeyStore(firestore))
 */
 
-// Redis key store:
+// Redis can be used for both key storage and token buckets (but each can be used independently)
 /*
 import { createClient } from 'redis'
-import { RedisKeyStore } from 'svelte-api-keys'
+import { RedisKeyStore, RedisTokenBucket } from 'svelte-api-keys'
+import { env } from '$env/dynamic/private'
+
 const redis = createClient({ url: env.REDIS_URL })
 await redis.connect()
-const keyStore = await RedisKeyStore.create(redis)
+const storage = await RedisKeyStore.create(redis)
+const buckets = await RedisTokenBucket.create(redis)
 */
 
-// In Memory key store:
-import { InMemoryKeyStore } from 'svelte-api-keys'
-const keyStore = new InMemoryKeyStore()
+export const api_keys = new ApiKeys(storage, buckets)
 
-// caching the in-memory store doesn't make a lot of sense, but
-// would when using any database backed store implementation
-export const manager = new KeyManager(new LruCacheKeyStore(keyStore))
+// simplest would be:
+// export const handle = api_keys.handle
 
-const bucket = new InMemoryTokenBucket()
-const extractor = new KeyExtractor({ searchParam: 'key', httpHeader: 'x-api-key' })
+// we're giving it a different name to combine it with `sequence` ...
+const handleApi = api_keys.handle
 
-export const handleApi = new Handler(extractor, manager, bucket).handle
-
-export const handleTiers: Handle = async ({ event, resolve }) => {
+const handleTiers: Handle = async ({ event, resolve }) => {
 	const { locals } = event
 
 	// simulate usage tiers:

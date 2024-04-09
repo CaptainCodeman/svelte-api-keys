@@ -1,11 +1,13 @@
-import { KeyManager } from './key-manager'
+import { ApiKeys } from './api-keys'
+import { InMemoryTokenBucket } from './bucket-memory'
 import { InMemoryKeyStore } from './key-store-memory'
 
 describe('storage', () => {
 	// TODO: test manager calls storage, etc...
 	test('generate', async () => {
 		const storage = new InMemoryKeyStore()
-		const manager = new KeyManager(storage)
+		const buckets = new InMemoryTokenBucket()
+		const manager = new ApiKeys(storage, buckets, { searchParam: 'key' })
 		const info = {
 			user: '123',
 			expires: new Date(2024, 11, 31, 23, 59, 59),

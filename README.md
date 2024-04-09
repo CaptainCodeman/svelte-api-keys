@@ -35,49 +35,134 @@ Add to your project using your package manager of choice (tip: [`pnpm`](https://
 
     pnpm install svelte-api-keys
 
-### Create hooks.server handler
+### Create a key store
 
-Create a key manager instance that provides the interface to generate, store, and validate API keys. The key information can be stored in memory (for development & testing), in Redis, in Firestore, or any database you want by implementing a simple interface.
+The key store persists the information associated with an API key which is only ever accessed using the SHA256 hash of the key, for security purposes.
 
-We also create a hooks `handle` function that will hook everything into the SvelteKit processing pipeline:
+Provided implementations include an in-memory store, Firestore, and Redis. Other stores such as any popular RDBMS can be created by implementing a simple `KeyStore` interface.
+
+We'll use `src/lib/api_keys.ts` to to store the code in all the following examples:
+
+#### In Memory Key Store
+
+This uses an internal `Map` which is _not_ persisted so is suitable for development, testing and demonstration purposes only!
 
 ```ts
-import {
-  Handler,
-  KeyExtractor,
-  InMemoryTokenBucket,
-  InMemoryKeyStore,
-  KeyManager,
-} from 'svelte-api-keys'
+import { InMemoryKeyStore } from 'svelte-api-keys'
 
-// the KeyExtractor allows the handler to select the API key from the request. You can define one or more methods:
-// 1. searchParam key, for https://example.com/api?key=myapikey
-// 2. name of an HTTP header, such as 'x-api-key'
-// 3. name of a cookie to check in the request
-// 4. your own custom function which can lookup or transform the key
-const extractor = new KeyExtractor({ searchParam: 'key', httpHeader: 'x-api-key' })
+const storage = new InMemoryKeyStore()
+```
 
-// the token-bucket implementation will store the tokens available for each API key / client IP and endpoint group
-// an in-memory implementation is suitable for less-critical single server deployments or development & testing, a
-// Redis implementation is avaialable for durability and scalability
+#### Firestore Key Store
+
+Firestore is a popular cloud data store from Google. Use the `firebase-admin/firestore` lib to create a Firestore instance and pass it to the `FirestoreKeyStore` constructor. By default, key information is stored in a collection called `api` but this can be overridden in the constructor. To save read costs and improve performance, wrap the store in an `LruCacheKeyStore` instance:
+
+```ts
+import { initializeApp } from 'firebase-admin/app'
+import { getFirestore } from 'firebase-admin/firestore'
+import { FirestoreKeyStore, LruCacheKeyStore } from 'svelte-api-keys'
+import { env } from '$env/dynamic/private'
+
+const app = initializeApp({ projectId: env.FIREBASE_PROJECT_ID })
+const firestore = getFirestore(app)
+const storage = new LruCacheKeyStore(new FirestoreKeyStore(firestore))
+```
+
+#### Redis Key Store
+
+Redis is a fast persistable cache and makes for an excellent store. Use the node `redis` package to create a redis client instance and pass it to the `RedisKeyStore` static `create` method, which is used to ensure a search index exists. By default, key information is stored in a hash structure with the prefix `api:` but this can be overridden in the constructor:
+
+```ts
+import { createClient } from 'redis'
+import { RedisKeyStore } from 'svelte-api-keys'
+import { env } from '$env/dynamic/private'
+
+const redis = createClient({ url: env.REDIS_URL })
+await redis.connect()
+const storage = await RedisKeyStore.create(redis)
+```
+
+### Create a Token Bucket store
+
+The token bucket store maintains the state of each token bucket.
+
+Provided implementations include an in-memory store, and Redis. Other stores such as any popular RDBMS can be created by extending a base `TokenBucket` class and implementing a `consume` method.
+
+#### In Memory Token Buckets
+
+This uses an internal `Map` which is _not_ persisted or shared so is suitable for single-server use where potentially allowing excess requests in the event of a process restart would be acceptable, or for development, testing and demonstration purposes only!
+
+```ts
+import { InMemoryTokenBucket } from 'svelte-api-keys'
+
+const buckets = new InMemoryTokenBucket()
+```
+
+#### Redis Token Buckets
+
+The Redis implementation uses a server-side javascript function to handle the token bucket update logic, so Redis Stack Server is recommended. This function is created automatically when the redis client instance is passed to the `RedisTokenBucket` static `create` method. You can also override the default storage prefix (`bucket:`), module name (`TokenBucket`), and function name (`consume`) if needed.
+
+The key store and token bucket implementations are independent of each other and can be mix-and-matched as required, but it's likely that if you're using redis you'll use the Redis implementations of both so they can be created using the same redis client instance:
+
+```ts
+import { createClient } from 'redis'
+import { RedisKeyStore, RedisTokenBucket } from 'svelte-api-keys'
+import { env } from '$env/dynamic/private'
+
+const redis = createClient({ url: env.REDIS_URL })
+await redis.connect()
+const storage = await RedisKeyStore.create(redis)
+const buckets = await RedisTokenBucket.create(redis)
+```
+
+### Create an ApiKeys Manager
+
+The `ApiKeys` manager provides the interface to generate, validate, and manage API keys. It uses the API Key Store internally, and applies SHA256 hashing to keys for security when storing and retrieving them (you can never leak keys if you don't store them!). Normally, you should never access the key store directly - aways use the key manager to do so. When generating keys, it will ensure a key doesn't contain any 'bad words' (which could otherwise be unfortunate and embarrassing!).
+
+The simplest use just requires the key store and token bucket implementations be passed to it:
+
+```ts
+export const api_keys = new ApiKeys(storage, buckets)
+```
+
+There is an optional parameters object that can also control it's behavior by passing:
+
+`cookie` (default `api-key`) sets the name of a cookie to inspect for an API Key on any incoming request.
+
+`httpHeader` (default `x-api-key`) sets the name of an http header to inspect for an API Key on any incoming request. A request containing the http header `x-api-key: my-api-key` would find the key `my-api-key` automatically. Any key found in the http header will override a key found from a cookie.
+
+`searchParam` (default `key`) sets the name of a URL search parameter to inspect for an API Key on any incoming request. A request for `POST /my-endpoint?key=my-api-key` would find the key `my-api-key` automatically. Any key found in the search param will override a key found from an http header or cookie.
+
+`custom` (default undefined) sets a custom key extraction & transform function that allows you to perform your own key lookups, perhaps via an existing session cookie or similar, and also allows you to transform any existing key that has been extracted using the previous settings - you might [prefix keys to indicate their usage as Stripe does](https://docs.stripe.com/docs/api/authentication) for instance. This will override all other methods if specified.
+
+`key_length` (default 32) sets the length, in bytes, of the API key to generate. If you want shorter API keys you could consider setting it to a lower value such as 24 or 16 (but too low risks conflicts when generating new keys). Keys are converted to human-readable format using Base62 for compactness and easy copy-paste.
+
+So as a more complete example your `src/lib/api_keys.ts` may end up looking something like this, but using whatever key store and token bucket implementations make sense for you:
+
+```ts
+import { ApiKeys, InMemoryKeyStore, InMemoryTokenBucket } from 'svelte-api-keys'
+
+const storage = new InMemoryKeyStore()
 const buckets = new InMemoryTokenBucket()
 
-// the manager is used by the handler, but will also be use when generating and listing API key info to the user
-// which is why it's exported. The store is independent to the token bucket storage - the in-memory implementation
-// is only suitable for development and testing, persistent implementations are available for Redis or Firestore.
-// when using a database key-store, consider wrapping it with an LruCacheKeyStore to improve performance
-// optionally pass the key byte length to use (default 32 for 256 bits). Lower values will create shorter key strings
-export const manager = new KeyManager(new InMemoryKeyStore(), 16)
-
-// the handle function allows the API system to hook into the SvelteKit request pipeline
-// it will extract the API key from the request, validate & retrieve the key info for it
-// and provide a fluent API for endpoints to apply limits to
-export const handle = new Handler(extractor, manager, buckets).handle
+export const api_keys = new ApiKeys(storage, buckets, { searchParam: 'api-key', key_length: 16 })
 ```
+
+### Hook into the SvelteKit Request
+
+The `ApiKeys` instance we created provides a `.handle` property that can be used to hook it into the SvelteKit request pipeline. Just return this from `hooks.server.ts`:
+
+```ts
+import { api_keys } from '$lib/api_keys`
+
+export const handle = api_keys.handle
+```
+
+If you already have a `handle` function you can chain them together using the [`sequence`](https://kit.svelte.dev/docs/modules#sveltejs-kit-hooks-sequence) helper function.
 
 ### Use the API in endpoints
 
-Any request will now have an `api` object available on `locals`. This will have a `key`, and `info` property depending on whether an API Key was sent with the request and whether it was valid. It also provides a fluent API that any endpoint can use to `limit()` the request by passing in the refill rate to apply.
+Now our API Key manager is hooked into the SvelteKit pipeline, any request will have an `api` object available on `locals`. This will have a `key`, and `info` property depending on whether an API Key was sent with the request and whether it was valid. It also provides a fluent API that any endpoint can use to `limit()` the request by passing in the refill rate to apply.
 
 #### Simple Global Limit
 
@@ -190,23 +275,21 @@ Add an additional handler to `src/hooks.server.ts`:
 import { sequence } from '@sveltejs/kit/hooks'
 import type { Handle } from '@sveltejs/kit'
 import { fetchTierForUser } from '$lib/database'
-
-// create handle as before, but give it a different name:
-const handleApi = new Handler(extractor, manager, bucket).handle
+import { api_keys } from '$lib/api_keys`
 
 // this handle could set the locals.tier based on the api.info.user
 const handleTiers: Handle = async ({ event, resolve }) => {
   const { locals } = event
 
-  // fetchTierForUser is a fictitious API that will return the appropiate tier based on the key info user
-  // tip: this will benefit from an in-memory LRU + TTL cache to avoid slowing down repeated lookups
+  // fetchTierForUser is an example API that will return the appropriate tier based on the key info user
+  // tip: this would benefit from an in-memory LRU + TTL cache to avoid slowing down repeated lookups...
   locals.tier = await fetchTierForUser(locals.api.info)
 
   return await resolve(event)
 }
 
-// the handle we export is now a sequence of both of them
-export const handle = sequence(handleApi, handleTiers)
+// the handle we export is now a sequence of our api_keys handler and this one
+export const handle = sequence(api_keys.handle, handleTiers)
 ```
 
 Now our endpoints have access to a `locals.tier` value which can be used to select an appropriate token-bucket refill rate:
@@ -233,11 +316,11 @@ export async function POST({ locals }) {
 }
 ```
 
-Finally, should you need them for whatever reason, the `.limit(rate)` method returns details about the result of the call (which are also set as HTTP Response headers)
+Finally, should you need them for whatever reason, the `.limit(rate)` method returns details about the result of the call which are also set as HTTP Response headers - these will allow well-behaved clients to automatically back off when they hit rate limits.
 
 ## TODO
 
 Possible enhancements:
 
-* Warn if an endpoint fails to call `.limit(rate)`, at least after any other api methods
-* Provide a ready-to-go UI for managing keys
+- Warn if an endpoint fails to call `.limit(rate)`, at least after any other api methods
+- Provide a ready-to-go UI for managing keys

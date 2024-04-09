@@ -1,32 +1,8 @@
 import { error } from '@sveltejs/kit'
-import type { Handle, RequestEvent } from '@sveltejs/kit'
-import type { KeyExtractor } from './key-extractor'
-import type { KeyManager } from './key-manager'
+import type { RequestEvent } from '@sveltejs/kit'
 import type { TokenBuckets } from './bucket'
 import type { Refill } from './refill'
 import type { KeyInfo } from './key-info'
-
-type Input = Parameters<Handle>[0]
-
-export class Handler {
-	constructor(
-		private readonly extractor: KeyExtractor,
-		private readonly manager: KeyManager,
-		private readonly bucket: TokenBuckets,
-	) {}
-
-	handle = async (input: Input) => {
-		const { event, resolve } = input
-		const { locals } = event
-
-		const key = await this.extractor.extract(event)
-		const info = await this.manager.validate(key)
-
-		locals.api = new Api(event, this.bucket, key, info)
-
-		return await resolve(event)
-	}
-}
 
 export class Api {
 	private _name = ''

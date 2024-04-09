@@ -1,7 +1,7 @@
 {
 	"name": "svelte-api-keys",
 	"description": "API Key Generation, Validation, and Rate Limiting for SvelteKit",
-	"version": "0.0.6",
+	"version": "0.1.0",
 	"keywords": [
 		"svelte",
 		"sveltekit",

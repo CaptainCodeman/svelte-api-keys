@@ -5,7 +5,7 @@ import { Refill } from './refill'
 type Redis = ReturnType<typeof createClient>
 
 export class RedisTokenBucket extends TokenBucket {
-	constructor(
+	private constructor(
 		private readonly redis: Redis,
 		private readonly prefix = 'bucket:',
 		private readonly module = 'TokenBucket',
