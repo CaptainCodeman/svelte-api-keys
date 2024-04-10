@@ -12,11 +12,30 @@ export class Api {
 	private _any: string[] = []
 	private _all: string[] = []
 
+	/**
+	 * Number of seconds per second
+	 */
 	public readonly SECOND = 1
-	public readonly MINUTE = this.SECOND * 60
-	public readonly HOUR = this.MINUTE * 60
-	public readonly DAY = this.HOUR * 24
-	public readonly WEEK = this.DAY * 7
+
+	/**
+	 * Number of seconds per minute
+	 */
+	public readonly MINUTE = 60
+
+	/**
+	 * Number of seconds per hour
+	 */
+	public readonly HOUR = 3_600
+
+	/**
+	 * Number of seconds per day
+	 */
+	public readonly DAY = 86_400
+
+	/**
+	 * Number of seconds per week
+	 */
+	public readonly WEEK = 604_800
 
 	constructor(
 		private readonly event: RequestEvent,
@@ -25,16 +44,32 @@ export class Api {
 		public readonly info: KeyInfo | null,
 	) {}
 
+	/**
+	 * Allow anonymous requests without any API key
+	 */
 	anonymous() {
 		this._anon = true
 		return this
 	}
 
+	/**
+	 * Set the token bucket name to use for rate limiting.
+	 * Each named token bucket maintains a separate rate-limit.
+	 * Without a name, a single rate limit will apply across all calls.
+	 *
+	 * @param {string} name - the name of the token bucket
+	 */
 	name(name: string) {
 		this._name = name
 		return this
 	}
 
+	/**
+	 * Set the token cost to use when rate-limiting.
+	 * This is the number of tokens consumed when called.
+	 *
+	 * @param {number} cost - the number of tokens to consume
+	 */
 	cost(cost: number) {
 		if (cost < 1) {
 			error(500, 'API cost must be at least 1')
@@ -43,21 +78,57 @@ export class Api {
 		return this
 	}
 
+	/**
+	 * Requires that the API Key has the given permission.
+	 *
+	 * @param {string} permission - the permission
+	 */
 	has(permission: string) {
 		this._has = permission
 		return this
 	}
 
+	/**
+	 * Requires that the API Key has _any_ of the specified permissions.
+	 * This allows you to check for single or all permissions, such as
+	 * `read:my-project` and `read:*` (for all projects)
+	 *
+	 * @param {string[]} permissions - the permissions
+	 */
 	any(permissions: string[]) {
 		this._any = permissions
 		return this
 	}
 
+	/**
+	 * Requires that the API Key has _all_ of the specified permissions.
+	 * This allows you to check that the caller has permissions on a hierarchy
+	 * of entities.
+	 *
+	 * @param {string[]} permissions - the permissions
+	 */
 	all(permissions: string[]) {
 		this._all = permissions
 		return this
 	}
 
+	/**
+	 * Verify the call is allowed and is within the rate limit supplied.
+	 * Rate-limiting http headers are added to the response whether the
+	 * request is limited or not.
+	 *
+	 * If the request should be denied an error will be thrown and handled
+	 * by SvelteKit otherwise you can continue with generating the response.
+	 *
+	 * @param {Object} refill - the token bucket refill parameters
+	 * @param {number} refill.rate - the refill rate in tokens per second
+	 * @param {number} refill.size - the size / capacity of the token bucket
+	 * @throws {HttpError} Will throw a 401 error if the request doesn't include an api key and the call is not set to be anonymous
+	 * @throws {HttpError} Will throw a 403 error if the provided api key is invalid
+	 * @throws {HttpError} Will throw a 403 error if the provided api key has expired
+	 * @throws {HttpError} Will throw a 403 error if the provided api key lacks the required permissions
+	 * @throws {HttpError} Will throw a 429 error if the rate-limit is hit
+	 */
 	async limit(refill: Refill) {
 		if (refill.rate <= 0) throw `refill rate must be greater than 0`
 		if (refill.size < 1) throw `refill size must be at least 1`
@@ -67,7 +138,7 @@ export class Api {
 
 		const { key, info } = this
 
-		// if not anonymouse, key must be provided
+		// if not anonymous, key must be provided
 		if (!this._anon && !key) {
 			error(401, 'Missing API Key')
 		}

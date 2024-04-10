@@ -1,16 +1,39 @@
-// seconds per ...
+/**
+ * Number of seconds per second
+ */
 export const SECOND = 1
-export const MINUTE = SECOND * 60
-export const HOUR = MINUTE * 60
-export const DAY = HOUR * 24
-export const WEEK = DAY * 7
+
+/**
+ * Number of seconds per minute
+ */
+export const MINUTE = 60
+
+/**
+ * Number of seconds per hour
+ */
+export const HOUR = 3_600
+
+/**
+ * Number of seconds per day
+ */
+export const DAY = 86_400
+
+/**
+ * Number of seconds per week
+ */
+export const WEEK = 604_800
 
 export interface Refill {
 	readonly rate: number
 	readonly size: number
 }
 
-// parse a string representation
+/**
+ * Parses a string representation of a refill parameter
+ *
+ * @param value The refill parameter string representation
+ * @returns A refill object
+ */
 export function parseRefill(value: string) {
 	const re = /(?<rate>\d+)\s*\/\s*(?<unit>second|minute|hour|day|week)\s*(,\s*(?<size>\d+))?/gi
 	const result = re.exec(value)
