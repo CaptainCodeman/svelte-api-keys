@@ -1,4 +1,4 @@
-import { api_keys } from '../hooks.server'
+import { api_keys } from '../../hooks.server'
 
 export const actions = {
 	// generate a new API key
