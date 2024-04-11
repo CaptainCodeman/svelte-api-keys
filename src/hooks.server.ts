@@ -4,6 +4,7 @@ import { ApiKeys } from 'svelte-api-keys'
 
 // simple, for development / demo use, is to use in-memory implementations
 import { InMemoryKeyStore, InMemoryTokenBucket } from 'svelte-api-keys'
+import { dev } from '$app/environment'
 
 const storage = new InMemoryKeyStore()
 const buckets = new InMemoryTokenBucket()
@@ -57,4 +58,8 @@ const handleTiers: Handle = async ({ event, resolve }) => {
 	return await resolve(event)
 }
 
-export const handle = sequence(handleApi, handleTiers)
+const handleEmpty: Handle = async ({ event, resolve }) => {
+	return await resolve(event)
+}
+
+export const handle = dev ? sequence(handleApi, handleTiers) : handleEmpty
