@@ -135,6 +135,8 @@ There is an optional parameters object that can also control it's behavior by pa
 
 `custom` (default undefined) sets a custom key extraction & transform function that allows you to perform your own key lookups, perhaps via an existing session cookie or similar, and also allows you to transform any existing key that has been extracted using the previous settings - you might [prefix keys to indicate their usage as Stripe does](https://docs.stripe.com/docs/api/authentication) for instance. This will override all other methods if specified.
 
+`client_ip` (default uses SvelteKit's `GetClientAddress`) sets a custom function to obtain the Client IP address, only called if `.anonymous()` is used.
+
 `key_length` (default 32) sets the length, in bytes, of the API key to generate. If you want shorter API keys you could consider setting it to a lower value such as 24 or 16 (but too low risks conflicts when generating new keys). Keys are converted to human-readable format using Base62 for compactness and easy copy-paste.
 
 So as a more complete example your `src/lib/api_keys.ts` may end up looking something like this, but using whatever key store and token bucket implementations make sense for you:
