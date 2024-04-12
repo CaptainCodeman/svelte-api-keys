@@ -9,7 +9,7 @@ import de from 'bad-words-next/data/de.json'
 import type { KeyInfoData } from './key-info'
 import type { KeyStore } from './key-store'
 import type { TokenBuckets } from './bucket'
-import { Api } from './api'
+import { Api, type ClientIP } from './api'
 
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 const base62 = basex(BASE62)
@@ -32,6 +32,7 @@ interface BaseParam {
 	cookie?: string
 	custom?: CustomFn
 	key_length?: number
+	client_ip?: ClientIP
 }
 
 // SearchParam defines the URL searchParam to use for the API key
@@ -146,8 +147,9 @@ export class ApiKeys {
 
 		const key = await this.extract(event)
 		const info = await this.validate(key)
+		const client_ip = this.options.client_ip ?? ((event) => event.getClientAddress())
 
-		locals.api = new Api(event, this.buckets, key, info)
+		locals.api = new Api(event, this.buckets, client_ip, key, info)
 
 		return await resolve(event)
 	}
