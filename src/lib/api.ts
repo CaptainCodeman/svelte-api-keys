@@ -4,6 +4,8 @@ import type { TokenBuckets } from './bucket'
 import type { KeyInfo } from './key-info'
 import type { Refill } from './refill'
 
+export type ClientIP = (event: RequestEvent) => string
+
 export class Api {
 	private _name = ''
 	private _cost = 1
@@ -40,6 +42,7 @@ export class Api {
 	constructor(
 		private readonly event: RequestEvent,
 		private readonly bucket: TokenBuckets,
+		private readonly client_ip: ClientIP,
 		public readonly key: string | null,
 		public readonly info: KeyInfo | null,
 	) {}
@@ -182,7 +185,7 @@ export class Api {
 		}
 
 		// TODO: hash client IP address (?)
-		const bucketPrefix = info?.user || this.event.getClientAddress()
+		const bucketPrefix = info?.user || this.client_ip(this.event)
 		const bucketKey = bucketPrefix + ':' + this._name
 
 		// apply rate limiting
